@@ -44,16 +44,22 @@
     <div>
         <button onclick="increment()">+1</button>
         <button onclick="decrement()">-1</button>
+        <button onclick="startTimer()">Start</button>
+        <button onclick="stopTimer()">Stop</button>
+        <button onclick="resetTimer()">Reset</button>
     </div>
 
     <script>
         let timeLeft = 120; // 2 minutes in seconds
+        const initialTime = 120; // Store the initial time for resetting
         const timerElement = document.getElementById('timer');
         const counterElement = document.getElementById('counter');
         let counter = 0;
+        let countdown;
 
         function startTimer() {
-            const countdown = setInterval(() => {
+            stopTimer(); // Stop any running timer before starting a new one
+            countdown = setInterval(() => {
                 if (timeLeft <= 0) {
                     clearInterval(countdown);
                     timerElement.innerHTML = "0:00";
@@ -66,6 +72,16 @@
             }, 1000);
         }
 
+        function stopTimer() {
+            clearInterval(countdown);
+        }
+
+        function resetTimer() {
+            stopTimer(); // Stop the timer before resetting
+            timeLeft = initialTime;
+            timerElement.innerHTML = "2:00";
+        }
+
         function increment() {
             counter++;
             counterElement.innerHTML = counter;
@@ -75,8 +91,6 @@
             counter--;
             counterElement.innerHTML = counter;
         }
-
-        startTimer();
     </script>
 </body>
 </html>
