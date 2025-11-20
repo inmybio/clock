@@ -1,186 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Instagram</title>
-
-<style>
+  <meta charset="UTF-8">
+  <title>Voice Number Capture</title>
+  <style>
     body {
-        margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 60px;
     }
-
-    /* Fake Instagram header */
-    .header {
-        height: 54px;
-        border-bottom: 1px solid #dbdbdb;
-        display: flex;
-        align-items: center;
-        padding: 0 16px;
+    #startBtn {
+      padding: 12px 24px;
+      font-size: 18px;
+      cursor: pointer;
     }
-
-    .logo {
-        width: 120px;
+    #status {
+      margin-top: 20px;
+      font-size: 16px;
     }
-
-    /* Profile area */
-    .profile {
-        padding: 20px;
-        display: flex;
-        align-items: center;
+    #numberDisplay {
+      margin-top: 30px;
+      font-size: 40px;
+      font-weight: bold;
     }
-
-    .pfp {
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        border: 2px solid #ccc;
-        object-fit: cover;
-    }
-
-    .username {
-        margin-left: 20px;
-        font-size: 24px;
-        font-weight: 600;
-    }
-
-    .start-button {
-        display: block;
-        margin: 20px auto;
-        padding: 12px 18px;
-        background: #0095f6;
-        color: white;
-        border-radius: 8px;
-        text-align: center;
-        width: 200px;
-        font-size: 18px;
-        cursor: pointer;
-    }
-
-    .instructions {
-        text-align: center;
-        opacity: 0.6;
-        margin-top: 10px;
-    }
-</style>
+  </style>
 </head>
 <body>
+  <h1>Say a Number</h1>
+  <button id="startBtn">Turn On Microphone</button>
+  <div id="status">Click the button and then say a number.</div>
+  <div id="numberDisplay"></div>
 
-<!-- Fake Instagram Layout -->
-<div class="header">
-    <img class="logo" src="https://i.imgur.com/zDp0h8A.png">
-</div>
+  <script>
+    // Get DOM elements
+    const startBtn = document.getElementById("startBtn");
+    const statusDiv = document.getElementById("status");
+    const numberDisplay = document.getElementById("numberDisplay");
 
-<div class="profile">
-    <img id="profilePic" class="pfp" src="cards/back.png">
-    <div class="username">@yourname</div>
-</div>
+    // Web Speech API setup
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-<div class="start-button" onclick="startListening()">🎤 Start Listening</div>
-<div class="instructions">Say a card: “four of clubs”, “queen of hearts”, “ace of spades”…</div>
+    if (!SpeechRecognition) {
+      statusDiv.textContent = "Speech recognition is not supported in this browser.";
+      startBtn.disabled = true;
+    } else {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.continuous = true;      // keep listening until we stop it
+      recognition.interimResults = true;  // we can catch the number as soon as it appears
 
-<script>
-    // Map spoken card names → image files
-    const cardMap = {
-        "ace of spades": "as",
-        "ace of hearts": "ah",
-        "ace of clubs": "ac",
-        "ace of diamonds": "ad",
+      let listening = false;
+      let captured = false;
 
-        "two of spades": "2s",
-        "two of hearts": "2h",
-        "two of clubs": "2c",
-        "two of diamonds": "2d",
+      // Helper to search for the first digit sequence in text
+      function findFirstNumberInText(text) {
+        const match = text.match(/\d+/);
+        return match ? match[0] : null;
+      }
 
-        "three of spades": "3s",
-        "three of hearts": "3h",
-        "three of clubs": "3c",
-        "three of diamonds": "3d",
-
-        "four of spades": "4s",
-        "four of hearts": "4h",
-        "four of clubs": "4c",
-        "four of diamonds": "4d",
-
-        "five of spades": "5s",
-        "five of hearts": "5h",
-        "five of clubs": "5c",
-        "five of diamonds": "5d",
-
-        "six of spades": "6s",
-        "six of hearts": "6h",
-        "six of clubs": "6c",
-        "six of diamonds": "6d",
-
-        "seven of spades": "7s",
-        "seven of hearts": "7h",
-        "seven of clubs": "7c",
-        "seven of diamonds": "7d",
-
-        "eight of spades": "8s",
-        "eight of hearts": "8h",
-        "eight of clubs": "8c",
-        "eight of diamonds": "8d",
-
-        "nine of spades": "9s",
-        "nine of hearts": "9h",
-        "nine of clubs": "9c",
-        "nine of diamonds": "9d",
-
-        "ten of spades": "10s",
-        "ten of hearts": "10h",
-        "ten of clubs": "10c",
-        "ten of diamonds": "10d",
-
-        "jack of spades": "js",
-        "jack of hearts": "jh",
-        "jack of clubs": "jc",
-        "jack of diamonds": "jd",
-
-        "queen of spades": "qs",
-        "queen of hearts": "qh",
-        "queen of clubs": "qc",
-        "queen of diamonds": "qd",
-
-        "king of spades": "ks",
-        "king of hearts": "kh",
-        "king of clubs": "kc",
-        "king of diamonds": "kd"
-    };
-
-    let recognition;
-
-    function startListening() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        if (!SpeechRecognition) {
-            alert("Speech recognition not supported on this device.");
-            return;
+      startBtn.addEventListener("click", () => {
+        if (listening) {
+          // Optional: stop if user clicks again
+          recognition.stop();
+          listening = false;
+          statusDiv.textContent = "Stopped listening.";
+          return;
         }
 
-        recognition = new SpeechRecognition();
-        recognition.lang = "en-US";
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onresult = function(event) {
-            const spoken = event.results[0][0].transcript.toLowerCase();
-            console.log("Heard:", spoken);
-
-            for (let key in cardMap) {
-                if (spoken.includes(key)) {
-                    const imageCode = cardMap[key];
-                    document.getElementById("profilePic").src = "cards/" + imageCode + ".png";
-                    break;
-                }
-            }
-        };
-
+        // Reset state
+        captured = false;
+        numberDisplay.textContent = "";
+        statusDiv.textContent = "Listening... say a number.";
         recognition.start();
-    }
-</script>
+        listening = true;
+      });
 
+      recognition.onresult = (event) => {
+        if (captured) return;
+
+        let fullTranscript = "";
+
+        // Combine all results into one string, so we can find the first number
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript + " ";
+        }
+
+        const num = findFirstNumberInText(fullTranscript);
+
+        if (num !== null) {
+          // We got a number, show it and stop listening
+          captured = true;
+          numberDisplay.textContent = num;
+          statusDiv.textContent = "Captured number: " + num;
+          recognition.stop();
+          listening = false;
+        }
+      };
+
+      recognition.onerror = (event) => {
+        statusDiv.textContent = "Error: " + event.error;
+        listening = false;
+      };
+
+      recognition.onend = () => {
+        if (!captured) {
+          statusDiv.textContent = "Stopped listening. Click the button and try again.";
+        }
+        listening = false;
+      };
+    }
+  </script>
 </body>
 </html>
