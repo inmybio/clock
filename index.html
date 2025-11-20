@@ -1,97 +1,125 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Say a Number</title>
-  <style>
-    body { font-family: Arial; text-align: center; margin-top: 50px; }
-    #startBtn { padding: 12px 24px; font-size: 20px; cursor: pointer; }
-    #numberDisplay { font-size: 48px; margin-top: 30px; font-weight: bold; }
-  </style>
+<meta charset="UTF-8">
+<title>Say a Card</title>
+<style>
+  body { 
+    font-family: Arial; 
+    text-align: center; 
+    margin-top: 40px;
+  }
+  #startBtn {
+    padding: 14px 28px;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  #status {
+    margin-top: 20px;
+    font-size: 18px;
+  }
+  #cardDisplay img {
+    margin-top: 30px;
+    width: 220px;
+  }
+</style>
 </head>
-<body>
 
-<h2>Say a Number</h2>
+<body>
+<h2>Say a Playing Card</h2>
 <button id="startBtn">Turn On Microphone</button>
 <div id="status"></div>
-<div id="numberDisplay"></div>
+<div id="cardDisplay"></div>
 
 <script>
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-if (!SpeechRecognition) {
-    document.getElementById("status").innerText = "Speech recognition not supported.";
-}
-
 const recognition = new SpeechRecognition();
+
 recognition.lang = "en-US";
 recognition.continuous = true;
 recognition.interimResults = false;
 
-const numberWords = {
-  "zero":0,"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,
-  "ten":10,"eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,"sixteen":16,
-  "seventeen":17,"eighteen":18,"nineteen":19,
-  "twenty":20,"thirty":30,"forty":40,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90
-};
-
-// Convert spoken number phrase → digits
-function wordsToNumber(text) {
-    let words = text.toLowerCase().split(/[\s-]+/);
-    let total = 0;
-    let current = 0;
-
-    words.forEach(word => {
-        if (numberWords[word] !== undefined) {
-            let val = numberWords[word];
-            if (val >= 20) {
-                current += val;
-            } else {
-                current = current * 10 + val;
-            }
-        }
-    });
-
-    return current || null;
-}
-
-function extractNumber(text) {
-    // Check for digits first ("23")
-    let digit = text.match(/\d+/);
-    if (digit) return digit[0];
-
-    // Then convert word numbers ("twenty three")
-    let num = wordsToNumber(text);
-    if (num !== null && num !== 0) return num;
-
-    return null;
-}
-
+let listening = false;
 let captured = false;
 
+// Parse ranks
+const ranks = {
+  "ace":"A","1":"A",
+  "two":"2","2":"2",
+  "three":"3","3":"3",
+  "four":"4","4":"4",
+  "five":"5","5":"5",
+  "six":"6","6":"6",
+  "seven":"7","7":"7",
+  "eight":"8","8":"8",
+  "nine":"9","9":"9",
+  "ten":"10","10":"10",
+  "jack":"J","queen":"Q","king":"K",
+  "j":"J","q":"Q","k":"K"
+};
+
+// Parse suits
+const suits = {
+  "hearts":"H","heart":"H",
+  "diamonds":"D","diamond":"D",
+  "clubs":"C","club":"C",
+  "spades":"S","spade":"S"
+};
+
+// Card image URL pattern (standard deck)
+function cardURL(rank, suit) {
+  return `https://deckofcardsapi.com/static/img/${rank}${suit}.png`;
+}
+
+// Try to extract a card from speech
+function detectCard(text) {
+  text = text.toLowerCase();
+
+  let foundRank = null;
+  let foundSuit = null;
+
+  for (let r in ranks) {
+    if (text.includes(r)) foundRank = ranks[r];
+  }
+  for (let s in suits) {
+    if (text.includes(s)) foundSuit = suits[s];
+  }
+
+  if (foundRank && foundSuit) {
+    return {rank: foundRank, suit: foundSuit};
+  }
+  return null;
+}
+
 document.getElementById("startBtn").onclick = () => {
-    captured = false;
-    document.getElementById("status").innerText = "Listening...";
-    document.getElementById("numberDisplay").innerText = "";
-    recognition.start();
+  captured = false;
+  document.getElementById("status").innerText = "Listening for a card...";
+  document.getElementById("cardDisplay").innerHTML = "";
+  recognition.start();
 };
 
 recognition.onresult = (event) => {
-    if (captured) return;
+  if (captured) return;
 
-    let transcript = event.results[event.results.length - 1][0].transcript;
-    let num = extractNumber(transcript);
+  let transcript = event.results[event.results.length - 1][0].transcript;
+  let card = detectCard(transcript);
 
-    if (num !== null) {
-        captured = true;
-        recognition.stop();
-        document.getElementById("status").innerText = "Captured number:";
-        document.getElementById("numberDisplay").innerText = num;
-    }
+  if (card) {
+    captured = true;
+    recognition.stop();
+
+    let img = cardURL(card.rank, card.suit);
+
+    document.getElementById("status").innerText = 
+      `You said: ${card.rank} of ${card.suit}`;
+
+    document.getElementById("cardDisplay").innerHTML = 
+      `<img src="${img}">`;
+  }
 };
 
 recognition.onerror = (e) => {
-    document.getElementById("status").innerText = "Error: " + e.error;
+  document.getElementById("status").innerText = "Error: " + e.error;
 };
 </script>
 
