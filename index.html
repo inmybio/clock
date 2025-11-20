@@ -1,82 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Volume Button Test</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Instagram</title>
+
+<style>
     body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: white;
     }
 
-    #number {
-      font-size: 5rem;
-      margin-bottom: 20px;
-      color: red; /* default color */
+    /* Fake Instagram header */
+    .header {
+        height: 54px;
+        border-bottom: 1px solid #dbdbdb;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
     }
 
-    #info {
-      font-size: 0.9rem;
-      text-align: center;
-      opacity: 0.8;
-      max-width: 320px;
+    .logo {
+        width: 120px;
     }
-  </style>
+
+    /* Profile area */
+    .profile {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+    }
+
+    .pfp {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        border: 2px solid #ccc;
+        object-fit: cover;
+    }
+
+    .username {
+        margin-left: 20px;
+        font-size: 24px;
+        font-weight: 600;
+    }
+
+    .start-button {
+        display: block;
+        margin: 20px auto;
+        padding: 12px 18px;
+        background: #0095f6;
+        color: white;
+        border-radius: 8px;
+        text-align: center;
+        width: 200px;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .instructions {
+        text-align: center;
+        opacity: 0.6;
+        margin-top: 10px;
+    }
+</style>
 </head>
 <body>
-  <div id="number">0</div>
-  <div id="info">
-    Try pressing your phone volume up and volume down while this page is focused.<br><br>
-    Fallback: On a keyboard, use Arrow Up to increase the number and Arrow Down to cycle color.
-  </div>
 
-  <script>
-    const numberEl = document.getElementById("number");
+<!-- Fake Instagram Layout -->
+<div class="header">
+    <img class="logo" src="https://i.imgur.com/zDp0h8A.png">
+</div>
 
-    let value = 0;
-    const colors = ["red", "blue", "yellow"];
-    let colorIndex = 0; // 0 = red by default
+<div class="profile">
+    <img id="profilePic" class="pfp" src="cards/back.png">
+    <div class="username">@yourname</div>
+</div>
 
-    function updateNumber() {
-      numberEl.textContent = value;
+<div class="start-button" onclick="startListening()">🎤 Start Listening</div>
+<div class="instructions">Say a card: “four of clubs”, “queen of hearts”, “ace of spades”…</div>
+
+<script>
+    // Map spoken card names → image files
+    const cardMap = {
+        "ace of spades": "as",
+        "ace of hearts": "ah",
+        "ace of clubs": "ac",
+        "ace of diamonds": "ad",
+
+        "two of spades": "2s",
+        "two of hearts": "2h",
+        "two of clubs": "2c",
+        "two of diamonds": "2d",
+
+        "three of spades": "3s",
+        "three of hearts": "3h",
+        "three of clubs": "3c",
+        "three of diamonds": "3d",
+
+        "four of spades": "4s",
+        "four of hearts": "4h",
+        "four of clubs": "4c",
+        "four of diamonds": "4d",
+
+        "five of spades": "5s",
+        "five of hearts": "5h",
+        "five of clubs": "5c",
+        "five of diamonds": "5d",
+
+        "six of spades": "6s",
+        "six of hearts": "6h",
+        "six of clubs": "6c",
+        "six of diamonds": "6d",
+
+        "seven of spades": "7s",
+        "seven of hearts": "7h",
+        "seven of clubs": "7c",
+        "seven of diamonds": "7d",
+
+        "eight of spades": "8s",
+        "eight of hearts": "8h",
+        "eight of clubs": "8c",
+        "eight of diamonds": "8d",
+
+        "nine of spades": "9s",
+        "nine of hearts": "9h",
+        "nine of clubs": "9c",
+        "nine of diamonds": "9d",
+
+        "ten of spades": "10s",
+        "ten of hearts": "10h",
+        "ten of clubs": "10c",
+        "ten of diamonds": "10d",
+
+        "jack of spades": "js",
+        "jack of hearts": "jh",
+        "jack of clubs": "jc",
+        "jack of diamonds": "jd",
+
+        "queen of spades": "qs",
+        "queen of hearts": "qh",
+        "queen of clubs": "qc",
+        "queen of diamonds": "qd",
+
+        "king of spades": "ks",
+        "king of hearts": "kh",
+        "king of clubs": "kc",
+        "king of diamonds": "kd"
+    };
+
+    let recognition;
+
+    function startListening() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert("Speech recognition not supported on this device.");
+            return;
+        }
+
+        recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onresult = function(event) {
+            const spoken = event.results[0][0].transcript.toLowerCase();
+            console.log("Heard:", spoken);
+
+            for (let key in cardMap) {
+                if (spoken.includes(key)) {
+                    const imageCode = cardMap[key];
+                    document.getElementById("profilePic").src = "cards/" + imageCode + ".png";
+                    break;
+                }
+            }
+        };
+
+        recognition.start();
     }
+</script>
 
-    function cycleColor() {
-      colorIndex = (colorIndex + 1) % colors.length;
-      numberEl.style.color = colors[colorIndex];
-    }
-
-    document.addEventListener("keydown", function (e) {
-      // Try hardware volume keys where supported
-      if (e.key === "AudioVolumeUp" || e.keyCode === 175) {
-        e.preventDefault();
-        value += 1;
-        updateNumber();
-      } else if (e.key === "AudioVolumeDown" || e.keyCode === 174) {
-        e.preventDefault();
-        cycleColor();
-      }
-
-      // Fallback for desktop keyboard arrows
-      if (e.key === "ArrowUp") {
-        value += 1;
-        updateNumber();
-      } else if (e.key === "ArrowDown") {
-        cycleColor();
-      }
-    });
-
-    // Initial state
-    updateNumber();
-    numberEl.style.color = colors[colorIndex];
-  </script>
 </body>
 </html>
