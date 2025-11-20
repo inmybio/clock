@@ -1,114 +1,99 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Voice Number Capture</title>
+  <title>Say a Number</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 60px;
-    }
-    #startBtn {
-      padding: 12px 24px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-    #status {
-      margin-top: 20px;
-      font-size: 16px;
-    }
-    #numberDisplay {
-      margin-top: 30px;
-      font-size: 40px;
-      font-weight: bold;
-    }
+    body { font-family: Arial; text-align: center; margin-top: 50px; }
+    #startBtn { padding: 12px 24px; font-size: 20px; cursor: pointer; }
+    #numberDisplay { font-size: 48px; margin-top: 30px; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h1>Say a Number</h1>
-  <button id="startBtn">Turn On Microphone</button>
-  <div id="status">Click the button and then say a number.</div>
-  <div id="numberDisplay"></div>
 
-  <script>
-    // Get DOM elements
-    const startBtn = document.getElementById("startBtn");
-    const statusDiv = document.getElementById("status");
-    const numberDisplay = document.getElementById("numberDisplay");
+<h2>Say a Number</h2>
+<button id="startBtn">Turn On Microphone</button>
+<div id="status"></div>
+<div id="numberDisplay"></div>
 
-    // Web Speech API setup
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+<script>
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      statusDiv.textContent = "Speech recognition is not supported in this browser.";
-      startBtn.disabled = true;
-    } else {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.continuous = true;      // keep listening until we stop it
-      recognition.interimResults = true;  // we can catch the number as soon as it appears
+if (!SpeechRecognition) {
+    document.getElementById("status").innerText = "Speech recognition not supported.";
+}
 
-      let listening = false;
-      let captured = false;
+const recognition = new SpeechRecognition();
+recognition.lang = "en-US";
+recognition.continuous = true;
+recognition.interimResults = false;
 
-      // Helper to search for the first digit sequence in text
-      function findFirstNumberInText(text) {
-        const match = text.match(/\d+/);
-        return match ? match[0] : null;
-      }
+const numberWords = {
+  "zero":0,"one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,
+  "ten":10,"eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,"sixteen":16,
+  "seventeen":17,"eighteen":18,"nineteen":19,
+  "twenty":20,"thirty":30,"forty":40,"fifty":50,"sixty":60,"seventy":70,"eighty":80,"ninety":90
+};
 
-      startBtn.addEventListener("click", () => {
-        if (listening) {
-          // Optional: stop if user clicks again
-          recognition.stop();
-          listening = false;
-          statusDiv.textContent = "Stopped listening.";
-          return;
+// Convert spoken number phrase → digits
+function wordsToNumber(text) {
+    let words = text.toLowerCase().split(/[\s-]+/);
+    let total = 0;
+    let current = 0;
+
+    words.forEach(word => {
+        if (numberWords[word] !== undefined) {
+            let val = numberWords[word];
+            if (val >= 20) {
+                current += val;
+            } else {
+                current = current * 10 + val;
+            }
         }
+    });
 
-        // Reset state
-        captured = false;
-        numberDisplay.textContent = "";
-        statusDiv.textContent = "Listening... say a number.";
-        recognition.start();
-        listening = true;
-      });
+    return current || null;
+}
 
-      recognition.onresult = (event) => {
-        if (captured) return;
+function extractNumber(text) {
+    // Check for digits first ("23")
+    let digit = text.match(/\d+/);
+    if (digit) return digit[0];
 
-        let fullTranscript = "";
+    // Then convert word numbers ("twenty three")
+    let num = wordsToNumber(text);
+    if (num !== null && num !== 0) return num;
 
-        // Combine all results into one string, so we can find the first number
-        for (let i = 0; i < event.results.length; i++) {
-          fullTranscript += event.results[i][0].transcript + " ";
-        }
+    return null;
+}
 
-        const num = findFirstNumberInText(fullTranscript);
+let captured = false;
 
-        if (num !== null) {
-          // We got a number, show it and stop listening
-          captured = true;
-          numberDisplay.textContent = num;
-          statusDiv.textContent = "Captured number: " + num;
-          recognition.stop();
-          listening = false;
-        }
-      };
+document.getElementById("startBtn").onclick = () => {
+    captured = false;
+    document.getElementById("status").innerText = "Listening...";
+    document.getElementById("numberDisplay").innerText = "";
+    recognition.start();
+};
 
-      recognition.onerror = (event) => {
-        statusDiv.textContent = "Error: " + event.error;
-        listening = false;
-      };
+recognition.onresult = (event) => {
+    if (captured) return;
 
-      recognition.onend = () => {
-        if (!captured) {
-          statusDiv.textContent = "Stopped listening. Click the button and try again.";
-        }
-        listening = false;
-      };
+    let transcript = event.results[event.results.length - 1][0].transcript;
+    let num = extractNumber(transcript);
+
+    if (num !== null) {
+        captured = true;
+        recognition.stop();
+        document.getElementById("status").innerText = "Captured number:";
+        document.getElementById("numberDisplay").innerText = num;
     }
-  </script>
+};
+
+recognition.onerror = (e) => {
+    document.getElementById("status").innerText = "Error: " + e.error;
+};
+</script>
+
 </body>
 </html>
