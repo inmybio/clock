@@ -15,7 +15,6 @@
       --muted: #99a3b6;
       --accent: #7c5cff;
       --accent-2: #e34b89;
-      --track: #2a3142;
       --thumb: #ffffff;
       --success: #38d39f;
       --danger: #ff6b7a;
@@ -343,9 +342,12 @@
 
     video {
       width: 100%;
+      height: 100%;
+      min-height: 260px;
       aspect-ratio: 16 / 9;
       background: #05070c;
       object-fit: contain;
+      display: block;
     }
 
     .empty-preview {
@@ -679,6 +681,9 @@
       segmentsList.innerHTML = '<div class="segment"><div><strong>No segments yet</strong><small>Analyze a video to generate cut points.</small></div></div>';
       drawEmptyWave();
 
+      originalWrap.className = 'empty-preview';
+      processedWrap.className = 'empty-preview';
+
       if (!keepFile) {
         sourceFile = null;
         metaName.textContent = 'No file';
@@ -700,13 +705,28 @@
       video.controls = true;
       video.muted = muted;
       video.playsInline = true;
+      video.preload = 'metadata';
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.display = 'block';
+
+      video.addEventListener('loadeddata', () => {
+        setStatus('Video preview ready.', 'success');
+      });
+
+      video.addEventListener('error', () => {
+        setStatus('This video was loaded, but your browser cannot preview this format or codec.', 'error');
+      });
+
       container.innerHTML = '';
+      container.classList.remove('empty-preview');
       container.appendChild(video);
+      video.load();
       return video;
     }
 
     async function handleFile(file) {
-      if (!file || !file.type.startsWith('video/')) {
+      if (!file) {
         setStatus('Please choose a valid video file.', 'error');
         return;
       }
@@ -720,6 +740,8 @@
       if (sourceUrl) URL.revokeObjectURL(sourceUrl);
       sourceUrl = URL.createObjectURL(file);
       attachVideo(originalWrap, sourceUrl);
+      originalWrap.classList.remove('empty-preview');
+      processedWrap.classList.add('empty-preview');
       processedWrap.innerHTML = 'After analysis and export, the cut version will appear here.';
       processedBadge.textContent = 'No output yet';
 
@@ -727,8 +749,9 @@
       tempVideo.preload = 'metadata';
       tempVideo.src = sourceUrl;
       await new Promise((resolve, reject) => {
-        tempVideo.onloadedmetadata = resolve;
-        tempVideo.onerror = reject;
+        tempVideo.onloadedmetadata = () => resolve();
+        tempVideo.onerror = () => reject(new Error('Metadata failed to load'));
+        tempVideo.load();
       });
       durationSeconds = tempVideo.duration || 0;
       metaDuration.textContent = fmtSec(durationSeconds);
