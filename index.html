@@ -1,127 +1,1047 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Say a Card</title>
-<style>
-  body { 
-    font-family: Arial; 
-    text-align: center; 
-    margin-top: 40px;
-  }
-  #startBtn {
-    padding: 14px 28px;
-    font-size: 20px;
-    cursor: pointer;
-  }
-  #status {
-    margin-top: 20px;
-    font-size: 18px;
-  }
-  #cardDisplay img {
-    margin-top: 30px;
-    width: 220px;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Silence Remover</title>
+  <style>
+    :root {
+      --bg-1: #06070a;
+      --bg-2: #10131b;
+      --panel: rgba(19, 24, 34, 0.92);
+      --panel-2: rgba(27, 33, 46, 0.9);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f5f7fb;
+      --muted: #99a3b6;
+      --accent: #7c5cff;
+      --accent-2: #e34b89;
+      --track: #2a3142;
+      --thumb: #ffffff;
+      --success: #38d39f;
+      --danger: #ff6b7a;
+      --shadow: 0 22px 60px rgba(0, 0, 0, 0.4);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(124, 92, 255, 0.2), transparent 30%),
+        radial-gradient(circle at top right, rgba(227, 75, 137, 0.16), transparent 28%),
+        linear-gradient(180deg, var(--bg-2), var(--bg-1));
+      padding: 28px;
+    }
+
+    .app {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 22px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .left {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .brand p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(124, 92, 255, 0.14);
+      color: #d8d0ff;
+      font-size: 12px;
+      white-space: nowrap;
+      border: 1px solid rgba(124, 92, 255, 0.24);
+    }
+
+    .upload {
+      border-radius: 22px;
+      border: 1.5px dashed rgba(255, 255, 255, 0.14);
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01));
+      min-height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      transition: 0.2s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload:hover,
+    .upload.dragover {
+      border-color: rgba(124, 92, 255, 0.6);
+      background: linear-gradient(180deg, rgba(124,92,255,0.14), rgba(255,255,255,0.02));
+      transform: translateY(-1px);
+    }
+
+    .upload input { display: none; }
+
+    .upload-inner h2 {
+      margin: 10px 0 6px;
+      font-size: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .upload-inner p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      margin: 0 auto;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, rgba(124,92,255,0.25), rgba(227,75,137,0.22));
+      border: 1px solid rgba(255,255,255,0.09);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .controls-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .controls-card h3,
+    .info-card h3,
+    .segments-card h3 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .slider-row label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .value {
+      min-width: 90px;
+      text-align: right;
+      font-size: 14px;
+      color: #e7ebf5;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+    }
+
+    .slider-wrap {
+      grid-column: 1 / -1;
+      margin-top: -4px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      outline: none;
+      position: relative;
+      box-shadow: inset 0 0 0 999px rgba(255,255,255,0.08);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,0,0,0.35);
+      background: var(--thumb);
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,0,0,0.35);
+      background: var(--thumb);
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 14px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      box-shadow: 0 16px 30px rgba(124, 92, 255, 0.26);
+    }
+
+    .secondary {
+      background: rgba(255,255,255,0.06);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .ghost {
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    button:hover:enabled {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .info-card,
+    .segments-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .meta {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .meta-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .meta-line strong {
+      color: white;
+      font-weight: 700;
+    }
+
+    .status {
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #dfe5f0;
+      line-height: 1.45;
+    }
+
+    .status.success { border-color: rgba(56, 211, 159, 0.28); color: #c9f7e6; }
+    .status.error { border-color: rgba(255, 107, 122, 0.28); color: #ffd6db; }
+
+    .right {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 760px;
+    }
+
+    .preview-top {
+      padding: 18px 18px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .preview-card {
+      background: rgba(7, 10, 16, 0.82);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 300px;
+    }
+
+    .preview-card header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      color: #f7f8fc;
+      font-weight: 700;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    }
+
+    video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #05070c;
+      object-fit: contain;
+    }
+
+    .empty-preview {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      padding: 20px;
+      text-align: center;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .timeline {
+      padding: 20px 18px 18px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .bar-card {
+      background: rgba(12, 16, 24, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .bar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .bar-header h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .wave-wrap {
+      position: relative;
+      height: 170px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .segments-card {
+      margin: 0 18px 18px;
+    }
+
+    .segments-list {
+      margin-top: 14px;
+      max-height: 180px;
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .segment {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 14px;
+    }
+
+    .segment small {
+      color: var(--muted);
+      display: block;
+      margin-top: 4px;
+    }
+
+    .segment strong { color: white; }
+
+    @media (max-width: 1100px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+      .right { min-height: auto; }
+      .preview-top { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 14px; }
+      .btn-row { grid-template-columns: 1fr; }
+      .slider-row { grid-template-columns: 1fr; }
+      .value { text-align: left; min-width: 0; }
+      .brand { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
 </head>
-
 <body>
-<h2>Say a Playing Card</h2>
-<button id="startBtn">Turn On Microphone</button>
-<div id="status"></div>
-<div id="cardDisplay"></div>
+  <div class="app">
+    <section class="panel left">
+      <div class="brand">
+        <div>
+          <h1>Silence Cutter</h1>
+          <p>Upload a video, scan its audio, remove quiet sections, and export a new file with the silent parts cut out.</p>
+        </div>
+        <div class="pill">HTML + FFmpeg WASM</div>
+      </div>
 
-<script>
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
+      <label class="upload" id="uploadZone">
+        <input id="fileInput" type="file" accept="video/*" />
+        <div class="upload-inner">
+          <div class="icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 16V4M12 4L7.5 8.5M12 4L16.5 8.5M4 16.5V18.5C4 19.6046 4.89543 20.5 6 20.5H18C19.1046 20.5 20 19.6046 20 18.5V16.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2>Drop video here</h2>
+          <p>or click to choose a file</p>
+        </div>
+      </label>
 
-recognition.lang = "en-US";
-recognition.continuous = true;
-recognition.interimResults = false;
+      <div class="controls-card">
+        <h3>Detection controls</h3>
 
-let listening = false;
-let captured = false;
+        <div class="slider-row">
+          <label for="threshold">Volume threshold</label>
+          <div class="value" id="thresholdValue">-29.8 dB</div>
+          <div class="slider-wrap">
+            <input id="threshold" type="range" min="-60" max="0" step="0.1" value="-29.8" />
+          </div>
+        </div>
 
-// Parse ranks
-const ranks = {
-  "ace":"A","1":"A",
-  "two":"2","2":"2",
-  "three":"3","3":"3",
-  "four":"4","4":"4",
-  "five":"5","5":"5",
-  "six":"6","6":"6",
-  "seven":"7","7":"7",
-  "eight":"8","8":"8",
-  "nine":"9","9":"9",
-  "ten":"10","10":"10",
-  "jack":"J","queen":"Q","king":"K",
-  "j":"J","q":"Q","k":"K"
-};
+        <div class="slider-row">
+          <label for="duration">Duration</label>
+          <div class="value" id="durationValue">0.10 sec</div>
+          <div class="slider-wrap">
+            <input id="duration" type="range" min="0.05" max="2" step="0.01" value="0.10" />
+          </div>
+        </div>
 
-// Parse suits
-const suits = {
-  "hearts":"H","heart":"H",
-  "diamonds":"D","diamond":"D",
-  "clubs":"C","club":"C",
-  "spades":"S","spade":"S"
-};
+        <div class="slider-row">
+          <label for="delay">Delay</label>
+          <div class="value" id="delayValue">0.00 sec</div>
+          <div class="slider-wrap">
+            <input id="delay" type="range" min="0" max="1.5" step="0.01" value="0.00" />
+          </div>
+        </div>
 
-// Card image URL pattern (standard deck)
-function cardURL(rank, suit) {
-  return `https://deckofcardsapi.com/static/img/${rank}${suit}.png`;
-}
+        <div class="btn-row">
+          <button class="primary" id="analyzeBtn" disabled>Analyze</button>
+          <button class="secondary" id="exportBtn" disabled>Export Cut</button>
+          <button class="ghost" id="resetBtn">Reset</button>
+        </div>
 
-// Try to extract a card from speech
-function detectCard(text) {
-  text = text.toLowerCase();
+        <div class="status" id="statusBox">Load a video to begin.</div>
+      </div>
 
-  let foundRank = null;
-  let foundSuit = null;
+      <div class="info-card">
+        <h3>File info</h3>
+        <div class="meta">
+          <div class="meta-line"><span>Name</span><strong id="metaName">No file</strong></div>
+          <div class="meta-line"><span>Duration</span><strong id="metaDuration">0.00s</strong></div>
+          <div class="meta-line"><span>Segments kept</span><strong id="metaSegments">0</strong></div>
+          <div class="meta-line"><span>Removed silence</span><strong id="metaRemoved">0.00s</strong></div>
+        </div>
+      </div>
+    </section>
 
-  for (let r in ranks) {
-    if (text.includes(r)) foundRank = ranks[r];
-  }
-  for (let s in suits) {
-    if (text.includes(s)) foundSuit = suits[s];
-  }
+    <section class="panel right">
+      <div class="preview-top">
+        <div class="preview-card">
+          <header>
+            <span>Original video</span>
+            <span id="originalBadge" style="color: var(--muted); font-weight: 600;">Waiting for file</span>
+          </header>
+          <div id="originalWrap" class="empty-preview">Upload a video to preview it here.</div>
+        </div>
 
-  if (foundRank && foundSuit) {
-    return {rank: foundRank, suit: foundSuit};
-  }
-  return null;
-}
+        <div class="preview-card">
+          <header>
+            <span>Processed preview</span>
+            <span id="processedBadge" style="color: var(--muted); font-weight: 600;">No output yet</span>
+          </header>
+          <div id="processedWrap" class="empty-preview">After analysis and export, the cut version will appear here.</div>
+        </div>
+      </div>
 
-document.getElementById("startBtn").onclick = () => {
-  captured = false;
-  document.getElementById("status").innerText = "Listening for a card...";
-  document.getElementById("cardDisplay").innerHTML = "";
-  recognition.start();
-};
+      <div class="timeline">
+        <div class="bar-card">
+          <div class="bar-header">
+            <h3>Audio loudness map</h3>
+            <div class="legend">
+              <span><i class="swatch" style="background:#5de2a5"></i> kept</span>
+              <span><i class="swatch" style="background:#ff6b7a"></i> cut</span>
+              <span><i class="swatch" style="background:#ffffff"></i> threshold</span>
+            </div>
+          </div>
+          <div class="wave-wrap">
+            <canvas id="waveCanvas" width="1200" height="340"></canvas>
+          </div>
+        </div>
+      </div>
 
-recognition.onresult = (event) => {
-  if (captured) return;
+      <div class="segments-card">
+        <h3>Kept segments</h3>
+        <div class="segments-list" id="segmentsList">
+          <div class="segment"><div><strong>No segments yet</strong><small>Analyze a video to generate cut points.</small></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
 
-  let transcript = event.results[event.results.length - 1][0].transcript;
-  let card = detectCard(transcript);
+  <script type="module">
+    import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/ffmpeg.js';
+    import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
 
-  if (card) {
-    captured = true;
-    recognition.stop();
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
-    let img = cardURL(card.rank, card.suit);
+    const thresholdEl = document.getElementById('threshold');
+    const durationEl = document.getElementById('duration');
+    const delayEl = document.getElementById('delay');
+    const thresholdValue = document.getElementById('thresholdValue');
+    const durationValue = document.getElementById('durationValue');
+    const delayValue = document.getElementById('delayValue');
 
-    document.getElementById("status").innerText = 
-      `You said: ${card.rank} of ${card.suit}`;
+    const statusBox = document.getElementById('statusBox');
+    const metaName = document.getElementById('metaName');
+    const metaDuration = document.getElementById('metaDuration');
+    const metaSegments = document.getElementById('metaSegments');
+    const metaRemoved = document.getElementById('metaRemoved');
+    const originalWrap = document.getElementById('originalWrap');
+    const processedWrap = document.getElementById('processedWrap');
+    const originalBadge = document.getElementById('originalBadge');
+    const processedBadge = document.getElementById('processedBadge');
+    const segmentsList = document.getElementById('segmentsList');
 
-    document.getElementById("cardDisplay").innerHTML = 
-      `<img src="${img}">`;
-  }
-};
+    const waveCanvas = document.getElementById('waveCanvas');
+    const waveCtx = waveCanvas.getContext('2d');
 
-recognition.onerror = (e) => {
-  document.getElementById("status").innerText = "Error: " + e.error;
-};
-</script>
+    let sourceFile = null;
+    let sourceUrl = '';
+    let outputUrl = '';
+    let audioContext = null;
+    let audioBuffer = null;
+    let waveform = [];
+    let keptSegments = [];
+    let removedDuration = 0;
+    let durationSeconds = 0;
+    let ffmpeg = null;
+    let ffmpegLoaded = false;
 
+    function setStatus(message, type = '') {
+      statusBox.textContent = message;
+      statusBox.className = 'status' + (type ? ' ' + type : '');
+    }
+
+    function fmtSec(value) {
+      return `${value.toFixed(2)}s`;
+    }
+
+    function fmtRange(start, end) {
+      return `${start.toFixed(2)}s → ${end.toFixed(2)}s`;
+    }
+
+    function updateSliderLabels() {
+      thresholdValue.textContent = `${Number(thresholdEl.value).toFixed(1)} dB`;
+      durationValue.textContent = `${Number(durationEl.value).toFixed(2)} sec`;
+      delayValue.textContent = `${Number(delayEl.value).toFixed(2)} sec`;
+      if (waveform.length) drawWaveform();
+    }
+
+    [thresholdEl, durationEl, delayEl].forEach(el => el.addEventListener('input', updateSliderLabels));
+
+    async function ensureFFmpeg() {
+      if (ffmpegLoaded) return;
+      setStatus('Loading FFmpeg engine...', '');
+      ffmpeg = new FFmpeg();
+      const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, 'application/wasm')
+      });
+      ffmpegLoaded = true;
+      setStatus('FFmpeg loaded. Ready to analyze.', 'success');
+    }
+
+    function resetState(keepFile = false) {
+      audioBuffer = null;
+      waveform = [];
+      keptSegments = [];
+      removedDuration = 0;
+      durationSeconds = 0;
+      exportBtn.disabled = true;
+      processedBadge.textContent = 'No output yet';
+      metaSegments.textContent = '0';
+      metaRemoved.textContent = '0.00s';
+      segmentsList.innerHTML = '<div class="segment"><div><strong>No segments yet</strong><small>Analyze a video to generate cut points.</small></div></div>';
+      drawEmptyWave();
+
+      if (!keepFile) {
+        sourceFile = null;
+        metaName.textContent = 'No file';
+        metaDuration.textContent = '0.00s';
+        analyzeBtn.disabled = true;
+        originalBadge.textContent = 'Waiting for file';
+        if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+        sourceUrl = '';
+        originalWrap.innerHTML = 'Upload a video to preview it here.';
+        if (outputUrl) URL.revokeObjectURL(outputUrl);
+        outputUrl = '';
+        processedWrap.innerHTML = 'After analysis and export, the cut version will appear here.';
+      }
+    }
+
+    function attachVideo(container, url, muted = false) {
+      const video = document.createElement('video');
+      video.src = url;
+      video.controls = true;
+      video.muted = muted;
+      video.playsInline = true;
+      container.innerHTML = '';
+      container.appendChild(video);
+      return video;
+    }
+
+    async function handleFile(file) {
+      if (!file || !file.type.startsWith('video/')) {
+        setStatus('Please choose a valid video file.', 'error');
+        return;
+      }
+
+      resetState(true);
+      sourceFile = file;
+      analyzeBtn.disabled = false;
+      metaName.textContent = file.name;
+      originalBadge.textContent = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+
+      if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+      sourceUrl = URL.createObjectURL(file);
+      attachVideo(originalWrap, sourceUrl);
+      processedWrap.innerHTML = 'After analysis and export, the cut version will appear here.';
+      processedBadge.textContent = 'No output yet';
+
+      const tempVideo = document.createElement('video');
+      tempVideo.preload = 'metadata';
+      tempVideo.src = sourceUrl;
+      await new Promise((resolve, reject) => {
+        tempVideo.onloadedmetadata = resolve;
+        tempVideo.onerror = reject;
+      });
+      durationSeconds = tempVideo.duration || 0;
+      metaDuration.textContent = fmtSec(durationSeconds);
+      setStatus('Video loaded. Click Analyze to scan audio and build cut points.', 'success');
+    }
+
+    uploadZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer.files?.[0];
+      if (file) handleFile(file);
+    });
+
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files?.[0];
+      if (file) handleFile(file);
+    });
+
+    function drawEmptyWave() {
+      waveCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+      const grad = waveCtx.createLinearGradient(0, 0, 0, waveCanvas.height);
+      grad.addColorStop(0, 'rgba(255,255,255,0.02)');
+      grad.addColorStop(1, 'rgba(255,255,255,0.005)');
+      waveCtx.fillStyle = grad;
+      waveCtx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+
+      waveCtx.strokeStyle = 'rgba(255,255,255,0.08)';
+      waveCtx.lineWidth = 1;
+      for (let i = 1; i < 5; i++) {
+        const y = (waveCanvas.height / 5) * i;
+        waveCtx.beginPath();
+        waveCtx.moveTo(0, y);
+        waveCtx.lineTo(waveCanvas.width, y);
+        waveCtx.stroke();
+      }
+
+      waveCtx.fillStyle = 'rgba(255,255,255,0.45)';
+      waveCtx.font = '600 18px Inter, system-ui, sans-serif';
+      waveCtx.textAlign = 'center';
+      waveCtx.fillText('Waveform will appear after analysis', waveCanvas.width / 2, waveCanvas.height / 2);
+    }
+
+    function dbToCanvasY(db) {
+      const minDb = -60;
+      const maxDb = 0;
+      const norm = (db - minDb) / (maxDb - minDb);
+      const clamped = Math.max(0, Math.min(1, norm));
+      return waveCanvas.height - clamped * (waveCanvas.height - 36) - 18;
+    }
+
+    function drawWaveform() {
+      waveCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+      const bg = waveCtx.createLinearGradient(0, 0, 0, waveCanvas.height);
+      bg.addColorStop(0, 'rgba(255,255,255,0.02)');
+      bg.addColorStop(1, 'rgba(255,255,255,0.01)');
+      waveCtx.fillStyle = bg;
+      waveCtx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+
+      for (let i = 1; i < 5; i++) {
+        const y = (waveCanvas.height / 5) * i;
+        waveCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+        waveCtx.lineWidth = 1;
+        waveCtx.beginPath();
+        waveCtx.moveTo(0, y);
+        waveCtx.lineTo(waveCanvas.width, y);
+        waveCtx.stroke();
+      }
+
+      const threshold = Number(thresholdEl.value);
+      const thresholdY = dbToCanvasY(threshold);
+      waveCtx.strokeStyle = 'rgba(255,255,255,0.9)';
+      waveCtx.setLineDash([8, 8]);
+      waveCtx.lineWidth = 2;
+      waveCtx.beginPath();
+      waveCtx.moveTo(0, thresholdY);
+      waveCtx.lineTo(waveCanvas.width, thresholdY);
+      waveCtx.stroke();
+      waveCtx.setLineDash([]);
+
+      if (!waveform.length) return;
+
+      const sliceWidth = waveCanvas.width / waveform.length;
+      const durationMin = Number(durationEl.value);
+      const delay = Number(delayEl.value);
+      const silentFlags = buildSilentFlags(waveform, threshold, durationMin, delay);
+
+      for (let i = 0; i < waveform.length; i++) {
+        const db = waveform[i];
+        const x = i * sliceWidth;
+        const y = dbToCanvasY(db);
+        const top = y;
+        const h = waveCanvas.height - y - 12;
+        waveCtx.fillStyle = silentFlags[i] ? 'rgba(255,107,122,0.9)' : 'rgba(93,226,165,0.92)';
+        waveCtx.fillRect(x, top, Math.max(1, sliceWidth - 1), h);
+      }
+    }
+
+    function buildWaveformFromBuffer(buffer, bars = 420) {
+      const data = buffer.getChannelData(0);
+      const samplesPerBar = Math.max(1, Math.floor(data.length / bars));
+      const vals = [];
+      for (let i = 0; i < bars; i++) {
+        const start = i * samplesPerBar;
+        const end = Math.min(data.length, start + samplesPerBar);
+        let sum = 0;
+        let count = 0;
+        for (let j = start; j < end; j++) {
+          const sample = data[j];
+          sum += sample * sample;
+          count++;
+        }
+        const rms = Math.sqrt(sum / Math.max(1, count));
+        const db = rms > 0 ? 20 * Math.log10(rms) : -60;
+        vals.push(Math.max(-60, Math.min(0, db)));
+      }
+      return vals;
+    }
+
+    function buildSilentFlags(dbData, threshold, minDuration, delay) {
+      const bucketDuration = durationSeconds / dbData.length;
+      const rawSilent = dbData.map(v => v < threshold);
+      const minBuckets = Math.max(1, Math.ceil(minDuration / Math.max(bucketDuration, 0.0001)));
+      const delayBuckets = Math.round(delay / Math.max(bucketDuration, 0.0001));
+      const out = Array(dbData.length).fill(false);
+
+      let start = -1;
+      for (let i = 0; i <= rawSilent.length; i++) {
+        const isSilent = rawSilent[i] || false;
+        if (isSilent && start === -1) start = i;
+        if ((!isSilent || i === rawSilent.length) && start !== -1) {
+          const end = i - 1;
+          const len = end - start + 1;
+          if (len >= minBuckets) {
+            const adjustedStart = Math.min(rawSilent.length - 1, start + delayBuckets);
+            for (let j = adjustedStart; j <= end; j++) out[j] = true;
+          }
+          start = -1;
+        }
+      }
+      return out;
+    }
+
+    function buildSegmentsFromWaveform() {
+      const threshold = Number(thresholdEl.value);
+      const minDuration = Number(durationEl.value);
+      const delay = Number(delayEl.value);
+      const silentFlags = buildSilentFlags(waveform, threshold, minDuration, delay);
+      const bucketDuration = durationSeconds / waveform.length;
+      const keepFlags = silentFlags.map(v => !v);
+      const segments = [];
+      let start = -1;
+
+      for (let i = 0; i <= keepFlags.length; i++) {
+        const keep = keepFlags[i] || false;
+        if (keep && start === -1) start = i;
+        if ((!keep || i === keepFlags.length) && start !== -1) {
+          const end = i;
+          const segStart = start * bucketDuration;
+          const segEnd = Math.min(durationSeconds, end * bucketDuration);
+          if (segEnd - segStart > 0.02) segments.push({ start: segStart, end: segEnd });
+          start = -1;
+        }
+      }
+
+      keptSegments = segments;
+      const kept = segments.reduce((sum, seg) => sum + (seg.end - seg.start), 0);
+      removedDuration = Math.max(0, durationSeconds - kept);
+      metaSegments.textContent = String(segments.length);
+      metaRemoved.textContent = fmtSec(removedDuration);
+      renderSegments();
+      drawWaveform();
+      exportBtn.disabled = segments.length === 0;
+
+      if (!segments.length) {
+        setStatus('No kept sections found. Lower the threshold or lower the duration setting.', 'error');
+      } else {
+        setStatus(`Found ${segments.length} kept segment${segments.length === 1 ? '' : 's'}. Ready to export.`, 'success');
+      }
+    }
+
+    function renderSegments() {
+      if (!keptSegments.length) {
+        segmentsList.innerHTML = '<div class="segment"><div><strong>No segments kept</strong><small>Adjust the sliders and analyze again.</small></div></div>';
+        return;
+      }
+
+      segmentsList.innerHTML = '';
+      keptSegments.forEach((seg, index) => {
+        const el = document.createElement('div');
+        el.className = 'segment';
+        const duration = seg.end - seg.start;
+        el.innerHTML = `
+          <div>
+            <strong>Segment ${index + 1}</strong>
+            <small>${fmtRange(seg.start, seg.end)}</small>
+          </div>
+          <strong>${fmtSec(duration)}</strong>
+        `;
+        segmentsList.appendChild(el);
+      });
+    }
+
+    async function analyzeAudio() {
+      if (!sourceFile) return;
+      analyzeBtn.disabled = true;
+      exportBtn.disabled = true;
+      setStatus('Decoding audio and scanning loudness...', '');
+
+      try {
+        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const buffer = await sourceFile.arrayBuffer();
+        audioBuffer = await audioContext.decodeAudioData(buffer.slice(0));
+        durationSeconds = audioBuffer.duration;
+        metaDuration.textContent = fmtSec(durationSeconds);
+        waveform = buildWaveformFromBuffer(audioBuffer);
+        buildSegmentsFromWaveform();
+      } catch (err) {
+        console.error(err);
+        setStatus('Could not analyze this file. Try a different video format.', 'error');
+      } finally {
+        analyzeBtn.disabled = false;
+      }
+    }
+
+    function makeFilterGraph() {
+      const parts = [];
+      keptSegments.forEach((seg, i) => {
+        parts.push(`[0:v]trim=start=${seg.start.toFixed(3)}:end=${seg.end.toFixed(3)},setpts=PTS-STARTPTS[v${i}]`);
+        parts.push(`[0:a]atrim=start=${seg.start.toFixed(3)}:end=${seg.end.toFixed(3)},asetpts=PTS-STARTPTS[a${i}]`);
+      });
+      const vConcat = keptSegments.map((_, i) => `[v${i}]`).join('');
+      const aConcat = keptSegments.map((_, i) => `[a${i}]`).join('');
+      parts.push(`${vConcat}${aConcat}concat=n=${keptSegments.length}:v=1:a=1[outv][outa]`);
+      return parts.join(';');
+    }
+
+    async function exportCutVideo() {
+      if (!sourceFile || !keptSegments.length) return;
+
+      try {
+        exportBtn.disabled = true;
+        analyzeBtn.disabled = true;
+        setStatus('Preparing export engine...', '');
+        await ensureFFmpeg();
+
+        const inputName = 'input.mp4';
+        const outputName = 'output.mp4';
+        const filterScript = 'cuts.txt';
+
+        setStatus('Writing file into FFmpeg memory...', '');
+        await ffmpeg.writeFile(inputName, await fetchFile(sourceFile));
+        await ffmpeg.writeFile(filterScript, new TextEncoder().encode(makeFilterGraph()));
+
+        setStatus('Rendering cut video. Large files can take a while...', '');
+        await ffmpeg.exec([
+          '-i', inputName,
+          '-filter_complex_script', filterScript,
+          '-map', '[outv]',
+          '-map', '[outa]',
+          '-c:v', 'libx264',
+          '-preset', 'veryfast',
+          '-crf', '18',
+          '-c:a', 'aac',
+          '-movflags', '+faststart',
+          outputName
+        ]);
+
+        const data = await ffmpeg.readFile(outputName);
+        const blob = new Blob([data.buffer], { type: 'video/mp4' });
+        if (outputUrl) URL.revokeObjectURL(outputUrl);
+        outputUrl = URL.createObjectURL(blob);
+        attachVideo(processedWrap, outputUrl);
+        processedBadge.textContent = `${(blob.size / (1024 * 1024)).toFixed(1)} MB`;
+
+        const link = document.createElement('a');
+        link.href = outputUrl;
+        link.download = sourceFile.name.replace(/\.[^.]+$/, '') + '_cut.mp4';
+        link.textContent = 'Download exported video';
+        link.style.display = 'inline-block';
+        link.style.marginTop = '12px';
+        link.style.color = '#cfc7ff';
+        link.style.fontWeight = '700';
+        processedWrap.appendChild(link);
+
+        setStatus('Export complete. Your cut video is ready.', 'success');
+      } catch (err) {
+        console.error(err);
+        setStatus('Export failed. Large files may exceed browser memory limits. Try a shorter clip.', 'error');
+      } finally {
+        exportBtn.disabled = keptSegments.length === 0;
+        analyzeBtn.disabled = !sourceFile;
+      }
+    }
+
+    analyzeBtn.addEventListener('click', analyzeAudio);
+    exportBtn.addEventListener('click', exportCutVideo);
+    resetBtn.addEventListener('click', () => {
+      fileInput.value = '';
+      resetState(false);
+      setStatus('Reset complete. Load a video to begin.');
+    });
+
+    thresholdEl.addEventListener('change', () => waveform.length && buildSegmentsFromWaveform());
+    durationEl.addEventListener('change', () => waveform.length && buildSegmentsFromWaveform());
+    delayEl.addEventListener('change', () => waveform.length && buildSegmentsFromWaveform());
+
+    drawEmptyWave();
+  </script>
 </body>
 </html>
